@@ -23,12 +23,19 @@ async function getParentSuggestionsFromDB(db, userId, parentId=null) {
     // create an array of users from possibleParentsIds
     const possibleParents = users.filter(user => possibleParentsIds.includes(user.id));
 
+
+    if (parentId) {
+        // add spouse(s) to possibleParents at the beginning of list
+        const spouses = findSpouses(parentId, relations, users);
+
+        possibleParents.push(...spouses);
+    }
+
     return possibleParents;
 }
 
 async function getAllRelationsFromDB(db) {
-    let relations = [];
-    [relations] = await db.promise().query('SELECT * from relation');
+    const [relations] = await db.promise().query('SELECT * from relation');
 
     return relations;
 }
@@ -67,5 +74,21 @@ function getAllConnections(userId, userList) {
     return connections;
 }
 
+function findSpouses(parentId, relations, users) {
+    // Find all the children of the parent
+    const children = relations
+        .filter(relation => relation.child_of === parentId)
+        .map(relation => relation.user_id);
+
+    // Find the other parents of the children
+    const spouseIds = relations
+        .filter(relation => children.includes(relation.user_id) && relation.child_of !== parentId)
+        .map(relation => relation.child_of);
+
+    // Filter the users array to get the spouse objects
+    const spouses = users.filter(user => spouseIds.includes(user.id));
+
+    return spouses;
+}
 
 module.exports = getParentSuggestionsFromDB;

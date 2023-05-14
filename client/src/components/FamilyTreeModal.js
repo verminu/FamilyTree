@@ -104,6 +104,8 @@ export function FamilyTreeModal(props) {
             <h3>Family tree of {userFullName(user)}</h3>
             <button className="close-button" onClick={handleClose}>Close</button>
 
+            <div className="text-content">The tree displays the person and {user.gender === 1 ? 'his' : 'her'} ancestors from top to bottom.</div>
+
             <div ref={treeRef} style={{width: "100%", height: "100%"}}>
                 <Tree
                     data={nodes}
