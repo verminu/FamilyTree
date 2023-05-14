@@ -1,14 +1,17 @@
 import {useUserFullName} from "../providers/UserProvider";
 import ReactModal from "react-modal";
 import {useUsers} from "../providers/UserProvider";
-import {useEffect, useState, createContext, useRef} from "react";
+import {useEffect, useState, createContext, useRef, useContext} from "react";
 import axios from "axios";
 import Tree from "react-d3-tree";
+import {RelationsModalContext} from "./RelationsModal";
 
 export function FamilyTreeModal(props) {
     const userFullName = useUserFullName();
     const {users} = useUsers();
     const [nodes, setNodes] = useState({});
+    const {openModal: openRelationsModal, isModalOpen: isRelationsModalOpen} = useContext(RelationsModalContext);
+    const {isModalOpen} = useContext(FamilyTreeModalContext);
 
     const user = props.user;
 
@@ -60,7 +63,6 @@ export function FamilyTreeModal(props) {
 
         return () => {
             setNodes({});
-
         }
     }, [props.isOpen]);
 
@@ -85,12 +87,25 @@ export function FamilyTreeModal(props) {
 
     }, [nodes]);
 
+
+    // update the tree when the relations modal is closed
+    useEffect(() => {
+        if (!isRelationsModalOpen && isModalOpen && props.isOpen) {
+            fetchParents();
+        }
+    }, [isRelationsModalOpen, isModalOpen, props.isOpen]);
+
     function handleClose() {
         props.onRequestClose();
     }
 
+    function handleNodeClick(nodeData, evt) {
+        // open relations modal
+        openRelationsModal(nodeData);
+    }
+
     const renderSvgNode = ({nodeDatum}) => (
-        <g>
+        <g onClick={() => handleNodeClick(nodeDatum)}>
             <circle r={30} fill={nodeDatum.gender === 1 ? "lightblue" : "pink"}/>
             <text style={{fontWeight: "normal", fontSize: "14px", textAnchor: "middle", dominantBaseline: "central"}}
                   strokeWidth="1">
@@ -104,7 +119,9 @@ export function FamilyTreeModal(props) {
             <h3>Family tree of {userFullName(user)}</h3>
             <button className="close-button" onClick={handleClose}>Close</button>
 
-            <div className="text-content">The tree displays the person and {user.gender === 1 ? 'his' : 'her'} ancestors from top to bottom.</div>
+            <div className="text-content">The tree displays the person and {user.gender === 1 ? 'his' : 'her'} ancestors
+                from top to bottom. Click on a node to see or edit {user.gender === 1 ? 'his' : 'her'} relations.
+            </div>
 
             <div ref={treeRef} style={{width: "100%", height: "100%"}}>
                 <Tree
