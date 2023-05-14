@@ -3,6 +3,7 @@ const addUserToDB = require('../../db/queries/add-user');
 const getUserFromDB = require('../../db/queries/get-user');
 const updateUserToDB = require("../../db/queries/update-user");
 const getChildrenFromDB = require("../../db/queries/get-children");
+const getUserByFieldsFromDB = require("../../db/queries/get-user-by-fields");
 
 // Add a user to the database
 async function addOrUpdateUser(req, res) {
@@ -46,6 +47,22 @@ async function addOrUpdateUser(req, res) {
                 });
             }
         }
+        else {
+            // the names must be unique
+            const results = await getUserByFieldsFromDB(db, {first_name, middle_name, last_name});
+            if (results.length > 0) {
+                // set the corresponding error message
+                return res.status(422).json({
+                    errors: [{
+                        location: 'body',
+                        msg: "The user already exists",
+                        path: 'first_name',
+                        type: 'server'
+                    }]
+                });
+            }
+        }
+
     }
 
     // Add existingUser to the database
